@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Scrapper.Core\Scraper.Core.csproj" />
-    <ProjectReference Include="..\Scrapper.Data\Scraper.Data.csproj" />
+    <ProjectReference Include="..\Scraper.Core\Scraper.Core.csproj" />
+    <ProjectReference Include="..\Scraper.Data\Scraper.Data.csproj" />
   </ItemGroup>
 
 </Project>
