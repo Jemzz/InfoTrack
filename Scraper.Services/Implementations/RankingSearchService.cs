@@ -36,7 +36,9 @@ namespace Scraper.Services.Implementations
                 var searchToUse = searchEngineResponse.Data;
                 var searchUrl = searchToUse.Url.Replace("(amount)", HttpUtility.UrlEncode(request.PageSize.ToString()))
                                                .Replace("(searchToFind)", request.SearchText);
+
                 var client = _httpClient.CreateClient();
+                client.BaseAddress = new Uri("https://www.google.co.uk");
 
                 if (searchToUse.SearchEngineName == "Bing")
                 {
@@ -44,7 +46,15 @@ namespace Scraper.Services.Implementations
                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36");
                 }
 
-                var clientResponse = await client.GetAsync(searchUrl);
+
+                if (searchToUse.SearchEngineName == "Google")
+                {
+                    var cookieContainer = new CookieContainer();
+                    using var handler = new HttpClientHandler() { CookieContainer = cookieContainer };
+                    cookieContainer.Add(client.BaseAddress!, new Cookie("CONSENT", "PENDING+986"));
+                }
+
+                using var clientResponse = await client.GetAsync(searchUrl);
 
                 string r = searchToUse.Regex;
 
@@ -78,7 +88,7 @@ namespace Scraper.Services.Implementations
                     {
                         SearchText = request.SearchText,
                         SearchEngineName = searchToUse.SearchEngineName,
-                        URL = searchToUse.Url,
+                        URL = searchUrl,
                         Rankings = rankingConcat,
                         SearchEngineId = searchToUse.Id
                     });

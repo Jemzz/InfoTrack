@@ -11,7 +11,7 @@ namespace Scraper.Data.Implementations
         public async Task<IEnumerable<SearchHistory>> ReadSearchHistory()
         {
             using var cn = Connection;
-            const string sql = "SELECT sh.Id, SearchText, se.Url, SearchDate, Rankings, se.SearchEngineName FROM SearchHistory sh inner join SearchEngines se on sh.id = se.id";
+            const string sql = "SELECT sh.Id, se.Id SearchEngineId, SearchText, sh.Url, SearchDate, Rankings, se.SearchEngineName FROM SearchHistory sh inner join SearchEngines se on sh.SearchEngineId = se.id";
 
             return await cn.QueryAsync<SearchHistory>(sql);
         }

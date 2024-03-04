@@ -12,14 +12,12 @@ namespace Scraper.API.Endpoints
     {
         public IEndpointRouteBuilder MapEndpoints(IEndpointRouteBuilder endPoints)
         {
-            endPoints.MapGet("/searchHistory", async (Guid? searchId, string searchText, string ranking, DateTime? searchDate, [FromServices] IRankingSearchHistoryService _searchHistory) =>
+            endPoints.MapGet("/searchHistory", async (string? searchId, string? searchText, [FromServices] IRankingSearchHistoryService _searchHistory) =>
             {
                 var searchHitory = await _searchHistory.GetSearchHistory(new Services.Requests.GetSearchHistoryRequest
                 {
-                    Id = searchId,
-                    KeyWords = searchText,
-                    Ranking = ranking,
-                    SearchDate = searchDate
+                    Id = !string.IsNullOrEmpty(searchId) ? Guid.Parse(searchId) : null,
+                    KeyWords = searchText
                 });
 
                 return searchHitory;

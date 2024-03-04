@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Scraper.API.Models;
 using Scraper.API.Modules.ModuleConfig;
 using Scraper.Data.Implementations;
 using Scraper.Data.Interfaces;
@@ -13,13 +14,13 @@ namespace Scraper.API.Modules
 
         public IEndpointRouteBuilder MapEndpoints(IEndpointRouteBuilder endPoints)
         {
-            endPoints.MapPost("/rankings", async (Guid searchId, string searchText, int pageSize, [FromServices] IRankingSearchService _search) =>
+            endPoints.MapPost("/rankings", async ([FromBody] RankingRequestModel request, [FromServices] IRankingSearchService _search) =>
             {
                 var rankings = await _search.GetSearchEngineRankings(new Services.Requests.GetSearchRankingRequest
                 {
-                    Id = searchId,
-                    SearchText = searchText,
-                    PageSize = pageSize,
+                    Id = Guid.Parse(request.SearchId),
+                    SearchText = request.SearchText,
+                    PageSize = request.PageSize,
                 });
 
                 return rankings;
@@ -27,7 +28,7 @@ namespace Scraper.API.Modules
             .WithName("Rankings")
             .WithOpenApi();
 
-            endPoints.MapGet("/serchengines", async ([FromServices] IRankingSearchService _search) =>
+            endPoints.MapGet("/searchengines", async ([FromServices] IRankingSearchService _search) =>
             {
                 var rankings = await _search.GetSearchEngines();
 
@@ -36,7 +37,7 @@ namespace Scraper.API.Modules
             .WithName("SearchEngines")
             .WithOpenApi();
 
-            endPoints.MapGet("/serchenginesbyid", async (Guid id, [FromServices] IRankingSearchService _search) =>
+            endPoints.MapGet("/searchenginesbyid", async (Guid id, [FromServices] IRankingSearchService _search) =>
             {
                 var rankings = await _search.GetSearchEngineById(id);
 

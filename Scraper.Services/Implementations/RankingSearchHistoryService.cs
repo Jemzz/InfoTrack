@@ -27,10 +27,8 @@ namespace Scraper.Services.Implementations
             {
                 var data = await _rankingHistoryRepository.ReadSearchHistory();
 
-                var filtered = data.Where(x => (!request.Id.HasValue || x.Id == request.Id) &&
-                (string.IsNullOrEmpty(request.KeyWords) || x.SearchText.Contains(request.KeyWords)) &&
-                (string.IsNullOrEmpty(request.Ranking) || x.Rankings.Contains(request.Ranking)) &&
-                (!request.SearchDate.HasValue || (x.SearchDate >= request.SearchDate && x.SearchDate <= request.SearchEndDate)));
+                var filtered = data.Where(x => (!request.Id.HasValue || x.SearchEngineId == request.Id))
+                                   .Where(x => string.IsNullOrEmpty(request.KeyWords) || x.SearchText.Contains(request.KeyWords));
 
                 var mappedDto = _mapper.Map<List<SearchHistoryDto>>(filtered.ToList());
 
