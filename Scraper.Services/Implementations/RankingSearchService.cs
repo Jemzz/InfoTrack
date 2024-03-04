@@ -38,17 +38,18 @@ namespace Scraper.Services.Implementations
                                                .Replace("(searchToFind)", request.SearchText);
 
                 var client = _httpClient.CreateClient();
-                client.BaseAddress = new Uri("https://www.google.co.uk");
 
+                // Required header for bing search
                 if (searchToUse.SearchEngineName == "Bing")
                 {
                     client.DefaultRequestHeaders.Add("User-Agent",
                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36");
                 }
 
-
+                // An attempt to bypass Googles cookie page interruption
                 if (searchToUse.SearchEngineName == "Google")
                 {
+                    client.BaseAddress = new Uri("https://www.google.co.uk");
                     var cookieContainer = new CookieContainer();
                     using var handler = new HttpClientHandler() { CookieContainer = cookieContainer };
                     cookieContainer.Add(client.BaseAddress!, new Cookie("CONSENT", "PENDING+986"));
@@ -65,10 +66,13 @@ namespace Scraper.Services.Implementations
                     {
                         SearchText = request.SearchText
                     };
+
+                    //filter out the urls
                     var matches = Regex.Matches(HttpUtility.HtmlDecode(html), r, RegexOptions.IgnoreCase);
 
                     var urls = matches.Select(x => x.Value).ToList();
 
+                    // retrieve matching urls
                     foreach (var i in urls)
                     {
                         if (i.Contains("www.infotrack.co.uk", StringComparison.OrdinalIgnoreCase))
@@ -82,8 +86,11 @@ namespace Scraper.Services.Implementations
                         ranking.Rankings.Add(0);
                     }
 
+                    //converts rankings to string to for storage purpose
                     var rankingConcat = string.Join(",", ranking.Rankings!.Select(x => x.ToString()));
 
+
+                    // create search history record
                     var createResponse = await _searchHistoryRepository.CreateSearchHistory(new StoreSearchHistoryRequest
                     {
                         SearchText = request.SearchText,

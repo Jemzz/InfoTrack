@@ -23,7 +23,8 @@ namespace Scraper.API.Endpoints
                 return searchHitory;
             })
             .WithName("History")
-            .WithOpenApi();
+            .WithOpenApi()
+            .WithSummary("Returns Search History");
 
             return endPoints;
         }

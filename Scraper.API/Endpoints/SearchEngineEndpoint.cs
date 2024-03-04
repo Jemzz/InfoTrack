@@ -26,7 +26,8 @@ namespace Scraper.API.Modules
                 return rankings;
             })
             .WithName("Rankings")
-            .WithOpenApi();
+            .WithOpenApi()
+            .WithSummary("Stores url rankings");
 
             endPoints.MapGet("/searchengines", async ([FromServices] IRankingSearchService _search) =>
             {
@@ -35,7 +36,8 @@ namespace Scraper.API.Modules
                 return rankings;
             })
             .WithName("SearchEngines")
-            .WithOpenApi();
+            .WithOpenApi()
+            .WithSummary("Retrieves search engines");
 
             endPoints.MapGet("/searchenginesbyid", async (Guid id, [FromServices] IRankingSearchService _search) =>
             {
@@ -44,7 +46,8 @@ namespace Scraper.API.Modules
                 return rankings;
             })
             .WithName("SearchEnginesById")
-            .WithOpenApi();
+            .WithOpenApi()
+            .WithSummary("Retrieves search engines by id");
 
             return endPoints;
         }
