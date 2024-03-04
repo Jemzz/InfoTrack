@@ -1,6 +1,6 @@
 Set up is not needed for application, simply run the application and everything is automated
 
-The Connection string can be found in the application config under
+The API is created using minimal API with .NET 8 and SQL Server Express. The Connection string can be found in the appconfig.js under
 
 ```barn
 Scaper.API
