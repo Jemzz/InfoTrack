@@ -5,3 +5,5 @@ The API is created using minimal API with .NET 8 and SQL Server Express. The Con
 ```barn
 Scaper.API
 ```
+
+The project is also integrated with swagger for local api testing
