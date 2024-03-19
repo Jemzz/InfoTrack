@@ -16,22 +16,28 @@ namespace Scraper.Data.Implementations
             return await cn.QueryAsync<SearchHistory>(sql);
         }
 
-        public async Task CreateSearch(string searchText, string url, string rankings, Guid searchEngineId)
+        public async Task<SearchHistory> CreateSearch(CreateSearch search)
         {
             using var cn = Connection;
             const string sql = "INSERT INTO SearchHistory (Id, SearchText, Url, SearchDate, Rankings, SearchEngineId) VALUES (@Id, @SearchText, @Url, @SearchDate, @Rankings, @SearchEngineId)";
 
+            var Id = Guid.NewGuid();
+
             var searchRecord = new
             {
-                Id = Guid.NewGuid(),
-                SearchText = searchText,
-                URL = url,
+                Id,
+                search.SearchText,
+                search.Url,
                 SearchDate = DateTime.Now,
-                Rankings = rankings,
-                SearchEngineId = searchEngineId
+                search.Rankings,
+                search.SearchEngineId
             };
 
             await cn.ExecuteAsync(sql, searchRecord);
+
+            var insertedUser = await cn.QueryFirstOrDefaultAsync<SearchHistory>("SELECT sh.Id, se.Id SearchEngineId, SearchText, sh.Url, SearchDate, Rankings, se.SearchEngineName FROM SearchHistory sh inner join SearchEngines se on sh.SearchEngineId = se.id where sh.Id = @Id", new { Id });
+
+            return insertedUser!;
         }
     }
 }

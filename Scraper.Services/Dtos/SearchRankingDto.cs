@@ -8,6 +8,7 @@
         }
 
         public string SearchText { get; set; }
+        public string SearchUrl { get; set; }
         public List<int> Rankings { get; set; }
     }
 }

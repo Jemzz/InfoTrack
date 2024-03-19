@@ -5,6 +5,7 @@ using Scraper.API.Modules.ModuleConfig;
 using Scraper.Data.Implementations;
 using Scraper.Data.Interfaces;
 using Scraper.Services.Implementations;
+using Scraper.Services.Requests;
 using Scraper.Services.Services;
 
 namespace Scraper.API.Modules
@@ -14,16 +15,34 @@ namespace Scraper.API.Modules
 
         public IEndpointRouteBuilder MapEndpoints(IEndpointRouteBuilder endPoints)
         {
-            endPoints.MapPost("/rankings", async ([FromBody] RankingRequestModel request, [FromServices] IRankingSearchService _search) =>
+            endPoints.MapPost("/rankings", async ([FromBody] RankingRequestModel request, [FromServices] IRankingSearchService _search, IRankingSearchHistoryService _searchHistory) =>
             {
-                var rankings = await _search.GetSearchEngineRankings(new Services.Requests.GetSearchRankingRequest
+                var rankings = await _search.GetSearchEngineRankings(new GetSearchRankingRequest
                 {
                     Id = Guid.Parse(request.SearchId),
                     SearchText = request.SearchText,
                     PageSize = request.PageSize,
                 });
 
-                return rankings;
+                if (rankings.Error == null)
+                {
+                    var historyResp = await _searchHistory.CreateSearchHistory(new StoreSearchHistoryRequest
+                    {
+                        SearchText = request.SearchText,
+                        URL = rankings.Data.SearchUrl,
+                        Rankings = rankings.Data.Rankings,
+                        SearchEngineId = Guid.Parse(request.SearchId)
+                    });
+
+                    if (historyResp.Error != null)
+                    {
+                        return Results.BadRequest(historyResp);
+                    }
+
+                    return Results.Ok(rankings);
+                }
+
+                return Results.BadRequest(rankings);
             })
             .WithName("Rankings")
             .WithOpenApi()
@@ -33,7 +52,12 @@ namespace Scraper.API.Modules
             {
                 var rankings = await _search.GetSearchEngines();
 
-                return rankings;
+                if (rankings.Error != null)
+                {
+                    return Results.BadRequest(rankings);
+                }
+
+                return Results.Ok(rankings);
             })
             .WithName("SearchEngines")
             .WithOpenApi()
@@ -43,7 +67,12 @@ namespace Scraper.API.Modules
             {
                 var rankings = await _search.GetSearchEngineById(id);
 
-                return rankings;
+                if (rankings.Error != null)
+                {
+                    return Results.BadRequest(rankings);
+                }
+
+                return Results.Ok(rankings);
             })
             .WithName("SearchEnginesById")
             .WithOpenApi()

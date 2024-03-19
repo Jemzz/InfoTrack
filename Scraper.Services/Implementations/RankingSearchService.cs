@@ -5,6 +5,7 @@ using Scraper.Data.Interfaces;
 using Scraper.Services.Dtos;
 using Scraper.Services.Dtos.ErrorDtos;
 using Scraper.Services.Requests;
+using Scraper.Services.SearchEngines;
 using Scraper.Services.Services;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -14,17 +15,15 @@ namespace Scraper.Services.Implementations
 {
     public class RankingSearchService : IRankingSearchService
     {
-        private readonly IHttpClientFactory _httpClient;
         private readonly ISearchEngineRepository _searchEngineRepository;
-        private readonly IRankingSearchHistoryService _searchHistoryRepository;
         private readonly IMapper _mapper;
+        public Func<string, SearchEngineBase> _searchEngineProvider;
 
-        public RankingSearchService(IHttpClientFactory httpClient, ISearchEngineRepository searchEngineRepository, IRankingSearchHistoryService searchHistoryRepository, IMapper mapper)
+        public RankingSearchService(ISearchEngineRepository searchEngineRepository, IMapper mapper, Func<string, SearchEngineBase> searchEngineProvider)
         {
-            _httpClient = httpClient;
             _searchEngineRepository = searchEngineRepository;
-            _searchHistoryRepository = searchHistoryRepository;
             _mapper = mapper;
+            _searchEngineProvider = searchEngineProvider;
         }
 
         public async Task<GetResponseDto<SearchRankingDto>> GetSearchEngineRankings(GetSearchRankingRequest request)
@@ -37,34 +36,20 @@ namespace Scraper.Services.Implementations
                 var searchUrl = searchToUse.Url.Replace("(amount)", HttpUtility.UrlEncode(request.PageSize.ToString()))
                                                .Replace("(searchToFind)", request.SearchText);
 
-                var client = _httpClient.CreateClient();
-
-                // Required header for bing search
-                if (searchToUse.SearchEngineName == "Bing")
-                {
-                    client.DefaultRequestHeaders.Add("User-Agent",
-                       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36");
-                }
-
-                // An attempt to bypass Googles cookie page interruption
-                if (searchToUse.SearchEngineName == "Google")
-                {
-                    client.BaseAddress = new Uri("https://www.google.co.uk");
-                    var cookieContainer = new CookieContainer();
-                    using var handler = new HttpClientHandler() { CookieContainer = cookieContainer };
-                    cookieContainer.Add(client.BaseAddress!, new Cookie("CONSENT", "PENDING+986"));
-                }
+                //var client = _httpClient.CreateClient();
+                var client = _searchEngineProvider(searchToUse.SearchEngineName).HandleCustomClientHeader();
 
                 using var clientResponse = await client.GetAsync(searchUrl);
 
-                string r = searchToUse.Regex;
+                var r = searchToUse.Regex;
 
                 if (clientResponse.IsSuccessStatusCode)
                 {
                     string html = await clientResponse.Content.ReadAsStringAsync();
                     var ranking = new SearchRankingDto
                     {
-                        SearchText = request.SearchText
+                        SearchText = request.SearchText,
+                        SearchUrl = searchUrl
                     };
 
                     //filter out the urls
@@ -73,41 +58,37 @@ namespace Scraper.Services.Implementations
                     var urls = matches.Select(x => x.Value).ToList();
 
                     // retrieve matching urls
-                    foreach (var i in urls)
+                    Dictionary<string, List<int>> urlMap = [];
+
+                    // get accurate ranking of duplicate ranking i.e if www.infotrack.co.uk/about is in position 5 and 9
+                    int index = 0;
+                    foreach (string url in urls)
                     {
-                        if (i.Contains("www.infotrack.co.uk", StringComparison.OrdinalIgnoreCase))
+                        if (url.Contains("www.infotrack.co.uk", StringComparison.OrdinalIgnoreCase))
                         {
-                            ranking.Rankings!.Add(urls.IndexOf(i) + 1);
+                            if (!urlMap.TryGetValue(url, out List<int>? value))
+                            {
+                                value = [];
+                                urlMap[url] = value;
+                            }
+
+                            value.Add(index + 1);
+
                         }
+                        index++;
                     }
+
+
+                    // get rankings
+                    ranking.Rankings = [.. urlMap.Values.SelectMany(x => x).OrderBy(index => index)];
+
 
                     if (ranking.Rankings.Count == 0)
                     {
                         ranking.Rankings.Add(0);
                     }
 
-                    //converts rankings to string to for storage purpose
-                    var rankingConcat = string.Join(",", ranking.Rankings!.Select(x => x.ToString()));
-
-
-                    // create search history record
-                    var createResponse = await _searchHistoryRepository.CreateSearchHistory(new StoreSearchHistoryRequest
-                    {
-                        SearchText = request.SearchText,
-                        SearchEngineName = searchToUse.SearchEngineName,
-                        URL = searchUrl,
-                        Rankings = rankingConcat,
-                        SearchEngineId = searchToUse.Id
-                    });
-
-                    if (createResponse.Data != null)
-                    {
-                        response.Data = ranking;
-                    }
-                    else
-                    {
-                        response.Error = createResponse.Error;
-                    }
+                    response.Data = ranking;
 
                     return response;
                 }
@@ -146,6 +127,11 @@ namespace Scraper.Services.Implementations
             try
             {
                 var searchEngines = await _searchEngineRepository.ReadSearchEngines();
+
+                if (!searchEngines.Any())
+                {
+                    throw new NullReferenceException("No search engines found");
+                }
 
                 var mappedDto = _mapper.Map<List<SearchEngineDto>>(searchEngines);
                 response.Data = mappedDto;

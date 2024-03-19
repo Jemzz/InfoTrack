@@ -6,6 +6,6 @@ namespace Scraper.Data.Interfaces
     {
         Task<IEnumerable<SearchHistory>> ReadSearchHistory();
 
-        Task CreateSearch(string searchText, string url, string rankings, Guid searchEngineId);
+        Task<SearchHistory> CreateSearch(CreateSearch search);
     }
 }

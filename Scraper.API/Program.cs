@@ -1,10 +1,13 @@
 using AutoMapper;
 using FluentMigrator.Runner;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Scraper.API.Auomapper;
 using Scraper.API.Endpoints.EndPointConfig;
 using Scraper.API.Migration;
+using Scraper.Core.Enums;
 using Scraper.Data;
 using Scraper.Data.DataSetup;
+using Scraper.Services.SearchEngines;
 using SqlAlias;
 using System.Reflection;
 
@@ -20,6 +23,21 @@ builder.Services.AddSingleton<Database>();
 builder.Services.AddFluentMigratorCore().ConfigureRunner(c => c.AddSqlServer2016()
             .WithGlobalConnectionString(builder.Configuration.GetConnectionString("DefaultConnection"))
             .ScanIn(Assembly.GetAssembly(typeof(Database))).For.Migrations()); // .AddSingleton<IMigrationRunner>();
+builder.Services.TryAddSingleton<BingEngine>();
+builder.Services.TryAddSingleton<GoogleEngine>();
+
+builder.Services.AddTransient<Func<string, SearchEngineBase>>(serviceProvider => reportType =>
+{
+    switch (reportType)
+    {
+        case nameof(SearchEngineTypes.Google):
+            return serviceProvider.GetService<GoogleEngine>()!;
+        case nameof(SearchEngineTypes.Bing):
+            return serviceProvider.GetService<BingEngine>()!;
+        default:
+            throw new NullReferenceException("Search engline doesnt exist");
+    }
+});
 
 // Automapper configg
 var mappingConfig = new MapperConfiguration(mc =>

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.Data.SqlClient;
 using Scraper.Core.NewFolder;
+using Scraper.Data.Entities;
 using Scraper.Data.Interfaces;
 using Scraper.Services.Dtos;
 using Scraper.Services.Dtos.ErrorDtos;
@@ -65,14 +66,31 @@ namespace Scraper.Services.Implementations
 
             try
             {
-                await _rankingHistoryRepository.CreateSearch(request.SearchText, request.URL, request.Rankings, request.SearchEngineId);
+                var rankingConcat = string.Join(",", request.Rankings!.Select(x => x.ToString()));
+                var insertedRecord = await _rankingHistoryRepository.CreateSearch(new CreateSearch { SearchText = request.SearchText, Url = request.URL, Rankings = rankingConcat, SearchEngineId = request.SearchEngineId });
+
+                if (insertedRecord == null)
+                {
+                    throw new NullReferenceException("Failed to create search history record");
+                }
 
                 response.Data = new CreatedSearchHistoryDto
                 {
-                    Rankings = request.Rankings,
-                    URL = request.URL,
-                    SearchText = request.SearchText,
-                    SearchEngineName = request.SearchEngineName
+                    Id = insertedRecord.Id,
+                    Rankings = insertedRecord.Rankings,
+                    URL = insertedRecord.Url,
+                    SearchText = insertedRecord.SearchText,
+                    SearchEngineName = insertedRecord.SearchEngineName
+                };
+
+                return response;
+            }
+            catch (NullReferenceException e)
+            {
+                response.Error = new ErrorDto
+                {
+                    Code = (int)HttpStatusCode.NotFound,
+                    Message = e.Message
                 };
 
                 return response;
