@@ -5,10 +5,9 @@ using Scraper.Data.Interfaces;
 
 namespace Scraper.Data.Implementations
 {
-    // Used Dapper as opposed to EF for ease of use
     public class RankingHistoryRepository(IOptions<RepositoryOptions> configuration) : RepositoryBase(configuration), IRankingHistoryRepository
     {
-        public async Task<IEnumerable<SearchHistory>> ReadSearchHistory()
+        public async Task<IEnumerable<SearchHistory>> GetAll()
         {
             using var cn = Connection;
             const string sql = "SELECT sh.Id, se.Id SearchEngineId, SearchText, sh.Url, SearchDate, Rankings, se.SearchEngineName FROM SearchHistory sh inner join SearchEngines se on sh.SearchEngineId = se.id";

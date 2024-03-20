@@ -2,8 +2,8 @@
 
 namespace Scraper.Data.Interfaces
 {
-    public interface ISearchEngineRepository
+    public interface ISearchEngineRepository : IRepository<SearchEngines>
     {
-        Task<IEnumerable<SearchEngines>> ReadSearchEngines();
+        Task<SearchEngines> ReadSearchById(Guid Id);
     }
 }

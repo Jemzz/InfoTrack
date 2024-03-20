@@ -2,10 +2,8 @@
 
 namespace Scraper.Data.Interfaces
 {
-    public interface IRankingHistoryRepository
+    public interface IRankingHistoryRepository : IRepository<SearchHistory>
     {
-        Task<IEnumerable<SearchHistory>> ReadSearchHistory();
-
         Task<SearchHistory> CreateSearch(CreateSearch search);
     }
 }

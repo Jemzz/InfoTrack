@@ -17,13 +17,15 @@ namespace Scraper.Services.Implementations
     {
         private readonly ISearchEngineRepository _searchEngineRepository;
         private readonly IMapper _mapper;
+        private readonly IHttpClientFactory _httpClient;
         public Func<string, SearchEngineBase> _searchEngineProvider;
 
-        public RankingSearchService(ISearchEngineRepository searchEngineRepository, IMapper mapper, Func<string, SearchEngineBase> searchEngineProvider)
+        public RankingSearchService(ISearchEngineRepository searchEngineRepository, IMapper mapper, Func<string, SearchEngineBase> searchEngineProvider, IHttpClientFactory httpClient)
         {
             _searchEngineRepository = searchEngineRepository;
             _mapper = mapper;
             _searchEngineProvider = searchEngineProvider;
+            _httpClient = httpClient;
         }
 
         public async Task<GetResponseDto<SearchRankingDto>> GetSearchEngineRankings(GetSearchRankingRequest request)
@@ -31,8 +33,13 @@ namespace Scraper.Services.Implementations
             var response = new GetResponseDto<SearchRankingDto>();
             try
             {
-                var searchEngineResponse = await GetSearchEngineById(request.Id);
-                var searchToUse = searchEngineResponse.Data;
+                var searchToUse = await _searchEngineRepository.ReadSearchById(request.Id);
+
+                if (searchToUse == null)
+                {
+                    throw new NullReferenceException("No search engine found");
+                }
+
                 var searchUrl = searchToUse.Url.Replace("(amount)", HttpUtility.UrlEncode(request.PageSize.ToString()))
                                                .Replace("(searchToFind)", request.SearchText);
 
@@ -78,7 +85,6 @@ namespace Scraper.Services.Implementations
                         index++;
                     }
 
-
                     // get rankings
                     ranking.Rankings = [.. urlMap.Values.SelectMany(x => x).OrderBy(index => index)];
 
@@ -96,6 +102,16 @@ namespace Scraper.Services.Implementations
                 {
                     throw new Exception($"Failed to scrape {searchUrl}");
                 }
+            }
+            catch (NullReferenceException e)
+            {
+                response.Error = new ErrorDto
+                {
+                    Code = (int)HttpStatusCode.NotFound,
+                    Message = e.Message
+                };
+
+                return response;
             }
             catch (SqlException e)
             {
@@ -126,7 +142,7 @@ namespace Scraper.Services.Implementations
 
             try
             {
-                var searchEngines = await _searchEngineRepository.ReadSearchEngines();
+                var searchEngines = await _searchEngineRepository.GetAll();
 
                 if (!searchEngines.Any())
                 {
@@ -175,14 +191,11 @@ namespace Scraper.Services.Implementations
             var response = new GetResponseDto<SearchEngineDto>();
             try
             {
-                var searchEngines = await _searchEngineRepository.ReadSearchEngines();
-
-                var selectedSearchEngine = searchEngines.FirstOrDefault(x => x.Id == searchEngineId);
-
-                var mappedDto = _mapper.Map<SearchEngineDto>(selectedSearchEngine);
+                var searchEngines = await _searchEngineRepository.ReadSearchById(searchEngineId) ?? throw new NullReferenceException("No search engine found");
+                var mappedDto = _mapper.Map<SearchEngineDto>(searchEngines);
                 response.Data = mappedDto;
 
-                return response!;
+                return response;
             }
             catch (NullReferenceException e)
             {

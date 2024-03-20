@@ -26,7 +26,7 @@ namespace Scraper.Services.Implementations
             var response = new GetResponseDto<List<SearchHistoryDto>>();
             try
             {
-                var data = await _rankingHistoryRepository.ReadSearchHistory();
+                var data = await _rankingHistoryRepository.GetAll();
 
                 var filtered = data.Where(x => (!request.Id.HasValue || x.SearchEngineId == request.Id))
                                    .Where(x => string.IsNullOrEmpty(request.KeyWords) || x.SearchText.Contains(request.KeyWords));

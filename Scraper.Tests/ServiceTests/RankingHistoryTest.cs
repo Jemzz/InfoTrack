@@ -10,16 +10,12 @@ namespace Scraper.Tests.ServiceTests
 {
     public class RankingHistoryTest : TestBase
     {
-        private readonly RankingSearchService _rankingSearchService;
         private readonly RankingSearchHistoryService _rankingSearchHistoryService;
-        private readonly Mock<ISearchEngineRepository> _mockSearchRepository;
         private readonly Mock<IRankingHistoryRepository> _mockSearchHistoryRepository;
 
         public RankingHistoryTest()
         {
-            _mockSearchRepository = _fixture.Freeze<Mock<ISearchEngineRepository>>();
             _mockSearchHistoryRepository = _fixture.Freeze<Mock<IRankingHistoryRepository>>();
-            _rankingSearchService = _fixture.Create<RankingSearchService>();
             _rankingSearchHistoryService = _fixture.Create<RankingSearchHistoryService>();
         }
 
@@ -28,7 +24,7 @@ namespace Scraper.Tests.ServiceTests
         {
             var expectedData = SearchHistoryMock.SearchHistory;
 
-            _mockSearchHistoryRepository.Setup(repo => repo.ReadSearchHistory()).ReturnsAsync(expectedData);
+            _mockSearchHistoryRepository.Setup(repo => repo.GetAll()).ReturnsAsync(expectedData);
 
             // Act
             var response = await _rankingSearchHistoryService.GetSearchHistory(new Services.Requests.GetSearchHistoryRequest());
@@ -44,7 +40,7 @@ namespace Scraper.Tests.ServiceTests
         {
             var expectedData = SearchHistoryMock.SearchHistory;
 
-            _mockSearchHistoryRepository.Setup(repo => repo.ReadSearchHistory()).ReturnsAsync(expectedData);
+            _mockSearchHistoryRepository.Setup(repo => repo.GetAll()).ReturnsAsync(expectedData);
 
             // Act
             var filterReq = new GetSearchHistoryRequest
