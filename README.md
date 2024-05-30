@@ -1,6 +1,4 @@
-Set up is not needed for application, simply run the application and everything is automated
-
-The API is created using minimal API with .NET 8 \, Dapper as the ORM and SQL Server Express. The ConnectionString can be found in the appsettings.json under
+API for scrapping google and bing results
 
 ```barn
 Scaper.API
